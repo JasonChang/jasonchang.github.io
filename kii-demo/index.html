@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title></title>
+	<!-- Core Style Sheet - Include with every page -->   
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="favicon.ico">
+</head>
+<body>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4">
+                <div class="login-panel panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Login</h3>                                                
+                    </div>
+                    <div class="panel-body">
+                    	 <form role="form" onsubmit="return false;">
+                            <fieldset>
+	                            <div class="form-group">
+	                                <input class="form-control" placeholder="Account" name="user" type="text" id="user" autofocus>
+	                            </div>
+	                            <div class="form-group">
+	                                <input class="form-control" placeholder="password" name="password" type="password" id="password" value="">
+	                            </div>
+	                            <!-- Change this to a button or input when using this as a form -->
+	                            <button href="#" class="btn btn-lg btn-success btn-block" id="login" data-loading-text="<i class='fa fa-spin fa-spinner'></i>">Login</button>
+	                             <!--<button href="#" class="btn btn-lg btn-success btn-block" id="register" data-loading-text="<i class='fa fa-spin fa-spinner'></i>">Register</button>        -->                    
+                            </fieldset>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>	
+</body>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>    
+    <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>   
+     <script type="text/javascript" src="js/html5-cloud-sdk-v2.2.2.js"></script>  
+	<script>
+		$(document).ready(function() {
+  			Kii.initializeWithSite("f2d85920", "63066a3469ebb95e9db1a92854723e7d", KiiSite.JP)
+
+		});
+
+			
+
+	$("#register").click(function() {	
+		var user = KiiUser.userWithUsername("test", "123456");
+		user.register({
+	  // Called on successful registration
+	  success: function(theUser) {
+	    console.log("User registered!");
+	  },
+	  // Called on a failed registration
+	  failure: function(theUser, errorString) {
+	    console.log(errorString);
+	  }
+	});
+	    });
+	   
+		$("#login").click(function() {
+			login();
+	    });
+
+	    function login(){
+	    	if($("#user").val() !='' && $("#password").val() !=''){
+	        	var login = {};
+	        	$("#login").button('loading');
+	        	$("#login").attr("disabled", true);
+	        	
+	        	KiiUser.authenticate($("#user").val(), $("#password").val(), {
+				  success: function(theUser) {
+				    console.log("User authenticated!");
+				    localStorage.setItem("accessToken", theUser._accessToken);
+
+				    window.location.href = "report.html";
+				  },
+				  // Called on a failed authentication
+				  failure: function(theUser, errorString) {
+				    console.log("Error authenticating: " + errorString);
+				    $("#login").attr("disabled", false);
+	                $("#login").button('reset');
+				  }
+				});
+	        }else{
+	        	alert("Please input account or password");
+	        }
+	    }
+
+	</script>
+</html>

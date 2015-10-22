@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title></title>
+	<!-- Core Style Sheet - Include with every page -->   
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="favicon.ico">
+</head>
+<body>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4">
+                <div class="login-panel panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">新增日期/體重</h3>                                                
+                    </div>
+                    <div class="panel-body">
+                    	 <form role="form" onsubmit="return false;">
+                            <fieldset>
+	                            <div class="form-group">
+	                                <input class="form-control" value="2015-10-22" name="date" type="text" id="date" autofocus>
+	                            </div>
+	                            <div class="form-group">
+	                                <input class="form-control" placeholder="Weight" name="weight" type="text" id="weight" value="">
+	                            </div>
+	                            <!-- Change this to a button or input when using this as a form -->
+	                            <button href="#" class="btn btn-lg btn-success btn-block" id="saveValue" data-loading-text="<i class='fa fa-spin fa-spinner'></i>">保存</button>                          
+                            </fieldset>
+                        </form>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        <row>
+        	<div id="main" style="height:400px"></div>
+        </row>
+    </div>	
+</body>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>    
+    <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>   
+     <script type="text/javascript" src="js/html5-cloud-sdk-v2.2.2.js"></script>
+     <script src="http://echarts.baidu.com/build/dist/echarts-all.js"></script>
+	<script>
+		var tempObj;
+		var myChart = echarts.init(document.getElementById('main'));
+
+		 
+
+		$(document).ready(function() {
+			
+  			Kii.initializeWithSite("f2d85920", "63066a3469ebb95e9db1a92854723e7d", KiiSite.JP)
+  			var accessToken = localStorage.getItem("accessToken");
+  			KiiUser.authenticateWithToken(accessToken, {
+			  success: function(theUser) {
+			  	loadData();
+			  },
+			  failure: function(theUser, errorString) {
+			    console.log("Error authenticating: " + errorString);
+			  }
+			});
+
+			
+			$("#saveValue").click(function() {
+				if($("#date").val() !='' && $("#weight").val() !=''){
+					var newDate={"date":$("#date").val(),"weight":$("#weight").val()}
+		        	
+					if(tempObj){//update
+						var isDup = false;
+						$.each(tempObj._customInfo.list, function(index, value){
+							if(value.date == newDate.date){
+								value.weight = newDate.weight;
+								isDup =true;
+							}
+						});
+						if(!isDup){
+							tempObj._customInfo.list.push(newDate);
+						}
+						
+						 tempObj.saveAllFields({
+					      success: function(theObject) {
+					        console.log("Object saved!");
+					        console.log(theObject);
+					      },
+					      failure: function(theObject, errorString) {
+					        console.log("Error saving object: " + errorString);
+					      }
+					    }, false);
+					}else{//new
+						var userBucket = KiiUser.getCurrentUser().bucketWithName("weight");
+						var obj = userBucket.createObject();
+						var list =[newDate];
+						obj.set("list", list);
+						obj.save({
+						  success: function(theObject) {
+						    console.log("Object saved & bucket created!");
+						  },
+						  failure: function(theObject, errorString) {
+						    console.log("Error saving object and bucket: " + errorString);
+						  }
+						});
+					}
+					$("#date").val("");
+					$("#weight").val("");
+					loadData();
+		        }else{
+		        	alert("Please input date ans weight");
+		        }
+		    });
+		});
+
+		function loadData(){
+			var bucket = KiiUser.getCurrentUser().bucketWithName("weight");
+			var all_query = KiiQuery.queryWithClause();
+
+			var queryCallbacks = {
+			  success: function(queryPerformed, resultSet, nextQuery) {
+			  	if(resultSet.length > 0){
+			  		//tempObj = resultSet[0]._customInfo.list;
+			  		tempObj = resultSet[0];
+			  		drawChart();
+			  	}
+			  },
+			  failure: function(queryPerformed, anErrorString) {
+			    // do something with the error response
+			  }
+			};
+
+			// Execute the query
+			bucket.executeQuery(all_query, queryCallbacks);
+		}
+		
+		function drawChart(){
+			var label =[];
+			  		var weight=[];
+			  		$.each(tempObj._customInfo.list, function(index, value){
+			  			console.log(value);
+			  			label.push(value.date);
+			  			weight.push(value.weight);
+			  		});
+			  		console.log(label);
+
+			  		var option = {
+			    title : {text: '體重變化' },
+			    tooltip : {trigger: 'axis' },
+			    legend: {data:['體重']},
+			    toolbox: {
+			        show : true,
+			        feature : {
+			            mark : {show: true},
+			            dataView : {show: true, readOnly: false},
+			            magicType : {show: true, type: ['line', 'bar']},
+			            restore : {show: true},
+			            saveAsImage : {show: true}
+			        }
+			    },
+			    calculable : true,
+			    xAxis : [
+			        {
+			            type : 'category',
+			            boundaryGap : false,
+			            data : label
+			        }
+			    ],
+			    yAxis : [
+			        {
+			            type : 'value',
+			            axisLabel : {
+			                formatter: '{value} KG'
+			            }
+			        }
+			    ],
+			    series : [
+			        {
+			            name:'體重',
+			            type:'line',
+			            data:weight,
+			            markPoint : {
+			                data : [
+			                    {type : 'max', name: '最大值'},
+			                    {type : 'min', name: '最小值'}
+			                ]
+			            },
+			            markLine : {
+			                data : [
+			                    {type : 'average', name: '平均值'}
+			                ]
+			            }
+			        }
+			        
+			    ]
+			}; 
+			myChart.setOption(option); 
+		}
+	</script>
+</html>
